@@ -74,6 +74,22 @@ var Compiler = function(grunt, options, cwd) {
       return true;
     });
 
+    // remove duplicate URLs (later paths override earlier ones)
+    var self = this;
+    var unique = {};
+    paths.forEach(function(path) {
+      var url = self.url(path);
+      if(url in unique) {
+        grunt.log.warn(
+          'Template "' + unique[url] + '" overridden by "' + path + '".');
+      }
+      unique[url] = path;
+    });
+    var urls = Object.keys(unique);
+    paths = urls.map(function(url) {
+      return unique[url];
+    });
+
     var script = "  'use strict';" + grunt.util.linefeed;
 
     script += paths
@@ -84,7 +100,7 @@ var Compiler = function(grunt, options, cwd) {
       }.bind(this))
       .map(this.stringify)
       .map(function(string, i) {
-        return this.cache(string, this.url(files[i]), options.prefix);
+        return this.cache(string, urls[i], options.prefix);
       }.bind(this))
       .map(grunt.util.normalizelf)
       .join(grunt.util.linefeed)
